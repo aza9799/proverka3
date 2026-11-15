@@ -32,6 +32,7 @@ label.chk{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:1
 #cam[data-st=dup] #banner{background:var(--dup);color:#241c00}
 #banner .t{font-size:26px;font-weight:800;letter-spacing:.5px}
 #banner .s{font-size:12px;margin-top:2px;word-break:break-all;opacity:.95}
+#off[hidden]{display:none!important}
 #off{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;padding:20px;text-align:center}
 
 .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
@@ -58,6 +59,7 @@ tr.ok td.s{color:var(--ok)}tr.bad td.s{color:var(--bad)}tr.dup td.s{color:var(--
 <div id="off">Камера выключена</div>
 </div>
 <div id="camMsg"></div>
+<div class="hint" id="dbg"></div>
 <div class="row">
 <button class="primary" id="btnCam">Включить камеру</button>
 <button id="btnTorch" hidden>Фонарик</button>
@@ -103,7 +105,7 @@ tr.ok td.s{color:var(--ok)}tr.bad td.s{color:var(--bad)}tr.dup td.s{color:var(--
 <h2>Ошибки в фактуре (длина не 31)</h2>
 <div class="scroll"><table><tbody id="badInvT"></tbody></table></div>
 </section>
-<p class="hint" style="text-align:center">Версия 2: строго 31 символ, статусы на камере</p>
+<p class="hint" style="text-align:center">Версия 3: исправлено чтение с камеры</p>
 </main>
 
 <script src="zxing.min.js"></script>
@@ -116,7 +118,7 @@ let seen=new Set(),log=[],nBad=0,nDup=0;
 /* ---------- разбор кода: берём только часть до криптохвоста ---------- */
 function parse(raw){
   let s=String(raw||"").replace(/^\]d2/i,"").replace(/\u241d/g,"\u001d")
-    .replace(/[()\s]/g,"").replace(/[\u0000-\u001c\u001e\u001f]/g,"");
+    .replace(/[()\s]/g,"").replace(/[\u0000-\u001c\u001e\u001f]/g,"").replace(/^\u001d+/,"");
   if(!s)return null;
   const g=s.indexOf("\u001d");
   let head;
@@ -189,6 +191,7 @@ function render(){
 let stream=null,track=null,running=false,torchOn=false,reader=null,cv=null,cx=null,wake=null;
 let last="",lastT=0;
 function onCode(text){
+  $("dbg").textContent="Считано с камеры: "+text.length+" символов";
   const now=Date.now();
   if(text===last&&now-lastT<1500){lastT=now;return} // тот же код в кадре не считаем повторно
   last=text;lastT=now;process(text);
