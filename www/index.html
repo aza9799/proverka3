@@ -26,12 +26,7 @@ label.chk{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:1
 #cam[data-st=ok]{border-color:var(--ok)}#cam[data-st=bad]{border-color:var(--bad)}#cam[data-st=dup]{border-color:var(--dup)}
 #video{width:100%;height:100%;object-fit:cover;display:block}
 #aim{position:absolute;inset:14% 22%;border:3px dashed rgba(255,255,255,.8);border-radius:10px;pointer-events:none}
-#banner{position:absolute;left:0;right:0;top:0;padding:10px 10px 12px;text-align:center;color:#fff;background:rgba(40,46,42,.82)}
-#cam[data-st=ok] #banner{background:var(--ok)}
-#cam[data-st=bad] #banner{background:var(--bad)}
-#cam[data-st=dup] #banner{background:var(--dup);color:#241c00}
-#banner .t{font-size:26px;font-weight:800;letter-spacing:.5px}
-#banner .s{font-size:12px;margin-top:2px;word-break:break-all;opacity:.95}
+#hl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #off[hidden]{display:none!important}
 #off{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;padding:20px;text-align:center}
 
@@ -55,7 +50,7 @@ tr.ok td.s{color:var(--ok)}tr.bad td.s{color:var(--bad)}tr.dup td.s{color:var(--
 <div id="cam" data-st="idle">
 <video id="video" playsinline muted></video>
 <div id="aim"></div>
-<div id="banner"><div class="t" id="bT">ГОТОВ</div><div class="s" id="bS">Загрузите фактуру и включите камеру</div></div>
+<canvas id="hl"></canvas>
 <div id="off">Камера выключена</div>
 </div>
 <div id="camMsg"></div>
@@ -105,7 +100,7 @@ tr.ok td.s{color:var(--ok)}tr.bad td.s{color:var(--bad)}tr.dup td.s{color:var(--
 <h2>Ошибки в фактуре (длина не 31)</h2>
 <div class="scroll"><table><tbody id="badInvT"></tbody></table></div>
 </section>
-<p class="hint" style="text-align:center">Версия 3: исправлено чтение с камеры</p>
+<p class="hint" style="text-align:center">Версия 4: цвет на самом коде, строго 31 символ</p>
 </main>
 
 <script src="zxing.min.js"></script>
@@ -116,14 +111,14 @@ const badInv=new Map();        // первые 31 символ -> реальна
 let seen=new Set(),log=[],nBad=0,nDup=0;
 
 /* ---------- разбор кода: берём только часть до криптохвоста ---------- */
-function parse(raw){
+function parse(raw,strict){
   let s=String(raw||"").replace(/^\]d2/i,"").replace(/\u241d/g,"\u001d")
     .replace(/[()\s]/g,"").replace(/[\u0000-\u001c\u001e\u001f]/g,"").replace(/^\u001d+/,"");
   if(!s)return null;
   const g=s.indexOf("\u001d");
   let head;
   if(g>=0)head=s.slice(0,g);
-  else if(s.length>31&&s.slice(31,33)==="91")head=s.slice(0,31); // сканер потерял разделитель, дальше идёт хвост
+  else if(!strict&&s.length>31&&s.slice(31,33)==="91")head=s.slice(0,31); // сканер потерял разделитель, дальше идёт хвост
   else head=s;
   if(!head)return null;
   return {head,len:head.length,ok:head.length===31};
@@ -140,15 +135,14 @@ function beep(f,d){
 function vib(p){try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
 
 /* ---------- статус на экране камеры ---------- */
-function show(st,title,sub){
-  $("cam").dataset.st=st;$("bT").textContent=title;$("bS").textContent=sub||"";
-}
+let hlSt="idle";
+function show(st){hlSt=st;$("cam").dataset.st=st}
 
 /* ---------- фактура ---------- */
 function loadInvoice(text){
   expected.clear();badInv.clear();seen=new Set();log=[];nBad=0;nDup=0;
   text.split(/\r?\n/).forEach(l=>{
-    const p=parse(l);if(!p)return;
+    const p=parse(l,true);if(!p)return;
     if(p.ok)expected.add(p.head);else badInv.set(p.head.slice(0,31),p.len);
   });
   $("invInfo").textContent="Кодов: "+expected.size+". Ошибок длины в фактуре: "+badInv.size+".";
@@ -190,7 +184,25 @@ function render(){
 /* ---------- камера: быстрый цикл распознавания DataMatrix ---------- */
 let stream=null,track=null,running=false,torchOn=false,reader=null,cv=null,cx=null,wake=null;
 let last="",lastT=0;
-function onCode(text){
+let hlBox=null,hlT=0;
+function setBox(pts,g){
+  if(!pts||!pts.length||!g){hlBox=null;return}
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  pts.forEach(q=>{const x=g.sx+q.getX()*g.k,y=g.sy+q.getY()*g.k;x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)});
+  const pad=(x1-x0)*0.06;hlBox=[x0-pad,y0-pad,x1+pad,y1+pad];hlT=Date.now();
+}
+const HLC={ok:"31,157,85",bad:"214,69,69",dup:"232,180,0"};
+function drawHL(){
+  const c=$("hl"),v=$("video"),cw=c.clientWidth,ch=c.clientHeight;
+  if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch}
+  const g=c.getContext("2d");g.clearRect(0,0,cw,ch);
+  if(!hlBox||Date.now()-hlT>450||!HLC[hlSt]||!v.videoWidth)return;
+  const k=Math.max(cw/v.videoWidth,ch/v.videoHeight),ox=(cw-v.videoWidth*k)/2,oy=(ch-v.videoHeight*k)/2;
+  const x=ox+hlBox[0]*k,y=oy+hlBox[1]*k,w=(hlBox[2]-hlBox[0])*k,h=(hlBox[3]-hlBox[1])*k;
+  g.fillStyle="rgba("+HLC[hlSt]+",.45)";g.fillRect(x,y,w,h);
+  g.lineWidth=5;g.strokeStyle="rgb("+HLC[hlSt]+")";g.strokeRect(x,y,w,h);
+}
+function onCode(text,pts,g){setBox(pts,g);
   $("dbg").textContent="Считано с камеры: "+text.length+" символов";
   const now=Date.now();
   if(text===last&&now-lastT<1500){lastT=now;return} // тот же код в кадре не считаем повторно
@@ -205,10 +217,10 @@ function loop(){
     cx.drawImage(v,sx,sy,s,s,0,0,out,out);
     try{
       const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(cv)));
-      onCode(reader.decode(bmp).getText());
+      const r=reader.decode(bmp);onCode(r.getText(),r.getResultPoints(),{sx,sy,k:s/out});
     }catch(e){}
   }
-  setTimeout(loop,0);
+  drawHL();setTimeout(loop,0);
 }
 async function camStart(){
   $("camMsg").textContent="";
@@ -231,7 +243,7 @@ async function camStart(){
   }
 }
 function camStop(){
-  running=false;torchOn=false;
+  running=false;torchOn=false;hlBox=null;
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
   track=null;$("video").srcObject=null;$("off").hidden=false;$("btnTorch").hidden=true;
   $("btnCam").textContent="Включить камеру";
