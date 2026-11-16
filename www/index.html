@@ -17,7 +17,7 @@ section{background:var(--surface);border:1px solid var(--line);border-radius:10p
 textarea,input[type=text]{width:100%;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px}
 textarea{min-height:100px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
-button{font:inherit;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:8px;padding:10px 14px;cursor:pointer}
+select,button{font:inherit;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:8px;padding:10px 14px;cursor:pointer}
 button.primary{background:var(--text);color:var(--bg);border-color:var(--text)}
 button[hidden]{display:none}
 label.chk{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:14px}
@@ -25,7 +25,6 @@ label.chk{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:1
 #cam{position:relative;aspect-ratio:4/3;background:#000;border-radius:12px;overflow:hidden;border:8px solid var(--idle);transition:border-color .08s}
 #cam[data-st=ok]{border-color:var(--ok)}#cam[data-st=bad]{border-color:var(--bad)}#cam[data-st=dup]{border-color:var(--dup)}
 #video{width:100%;height:100%;object-fit:cover;display:block}
-#aim{position:absolute;inset:14% 22%;border:3px dashed rgba(255,255,255,.8);border-radius:10px;pointer-events:none}
 #hl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #off[hidden]{display:none!important}
 #off{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;padding:20px;text-align:center}
@@ -49,7 +48,6 @@ tr.ok td.s{color:var(--ok)}tr.bad td.s{color:var(--bad)}tr.dup td.s{color:var(--
 <section>
 <div id="cam" data-st="idle">
 <video id="video" playsinline muted></video>
-<div id="aim"></div>
 <canvas id="hl"></canvas>
 <div id="off">Камера выключена</div>
 </div>
@@ -58,6 +56,7 @@ tr.ok td.s{color:var(--ok)}tr.bad td.s{color:var(--bad)}tr.dup td.s{color:var(--
 <div class="row">
 <button class="primary" id="btnCam">Включить камеру</button>
 <button id="btnTorch" hidden>Фонарик</button>
+<select id="qual" title="Размер кадра"><option value="960">Быстро</option><option value="1280">Точнее (мелкие коды)</option></select>
 <label class="chk"><input type="checkbox" id="snd" checked>Звук</label>
 </div>
 <div class="stats">
@@ -100,7 +99,7 @@ tr.ok td.s{color:var(--ok)}tr.bad td.s{color:var(--bad)}tr.dup td.s{color:var(--
 <h2>Ошибки в фактуре (длина не 31)</h2>
 <div class="scroll"><table><tbody id="badInvT"></tbody></table></div>
 </section>
-<p class="hint" style="text-align:center">Версия 4: цвет на самом коде, строго 31 символ</p>
+<p class="hint" style="text-align:center">Версия 5: мультисканер, строго 31 символ</p>
 </main>
 
 <script src="zxing.min.js"></script>
@@ -118,7 +117,7 @@ function parse(raw,strict){
   const g=s.indexOf("\u001d");
   let head;
   if(g>=0)head=s.slice(0,g);
-  else if(!strict&&s.length>31&&s.slice(31,33)==="91")head=s.slice(0,31); // сканер потерял разделитель, дальше идёт хвост
+  else if(!strict&&s.length>31&&s.slice(31,33)==="91")head=s.slice(0,31);
   else head=s;
   if(!head)return null;
   return {head,len:head.length,ok:head.length===31};
@@ -133,10 +132,12 @@ function beep(f,d){
     g.gain.value=.18;o.start();o.stop(AC.currentTime+d)}catch(e){}
 }
 function vib(p){try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
-
-/* ---------- статус на экране камеры ---------- */
-let hlSt="idle";
-function show(st){hlSt=st;$("cam").dataset.st=st}
+function feedback(st){
+  if(st==="bad"){beep(200,.4);vib(200)}
+  else if(st==="dup"){beep(520,.18);vib([50,50,50])}
+  else if(st==="ok"){beep(900,.07);vib(30)}
+}
+function show(st){$("cam").dataset.st=st}
 
 /* ---------- фактура ---------- */
 function loadInvoice(text){
@@ -146,34 +147,32 @@ function loadInvoice(text){
     if(p.ok)expected.add(p.head);else badInv.set(p.head.slice(0,31),p.len);
   });
   $("invInfo").textContent="Кодов: "+expected.size+". Ошибок длины в фактуре: "+badInv.size+".";
-  show("idle","ФАКТУРА ЗАГРУЖЕНА","Кодов: "+expected.size);
-  render();
+  show("idle");render();
 }
 
-/* ---------- проверка одного кода ---------- */
-function process(raw){
-  const p=parse(raw);if(!p)return;
-  if(!expected.size&&!badInv.size){show("bad","НЕТ ФАКТУРЫ","Сначала загрузите коды");beep(220,.4);return}
-  let st,title,sub;
-  if(!p.ok){st="bad";title="НЕВЕРНАЯ ДЛИНА";sub="Считано "+p.len+" символов, нужно 31"}
-  else if(seen.has(p.head)){st="dup";title="ДУБЛИКАТ";sub=p.head}
-  else if(expected.has(p.head)){st="ok";seen.add(p.head);title="ПРОВЕРЕНО";sub=p.head}
-  else if(badInv.has(p.head)){st="bad";title="ОШИБКА В ФАКТУРЕ";sub="В фактуре код длиной "+badInv.get(p.head)+" вместо 31"}
-  else{st="bad";title="ПЕРЕСОРТ";sub=p.head}
+/* ---------- проверка одного кода; возвращает ok / dup / bad ---------- */
+function check(raw){
+  const p=parse(raw);if(!p)return null;
+  if(!expected.size&&!badInv.size){$("camMsg").textContent="Сначала загрузите фактуру";return "bad"}
+  $("camMsg").textContent="";
+  let st,why;
+  if(!p.ok){st="bad";why="неверная длина ("+p.len+")"}
+  else if(seen.has(p.head)){st="dup";why="дубликат"}
+  else if(expected.has(p.head)){st="ok";seen.add(p.head);why="проверено"}
+  else if(badInv.has(p.head)){st="bad";why="ошибка в фактуре (длина "+badInv.get(p.head)+")"}
+  else{st="bad";why="пересорт"}
   if(st==="bad")nBad++;if(st==="dup")nDup++;
-  show(st,title,sub);
-  if(st==="ok"){beep(900,.09);vib(35)}else if(st==="dup"){beep(520,.2);vib([50,50,50])}else{beep(200,.45);vib(200)}
-  log.unshift({time:new Date().toLocaleTimeString("ru-RU"),code:p.head,st,why:title});
-  render();
+  show(st);
+  log.unshift({time:new Date().toLocaleTimeString("ru-RU"),code:p.head,st,why});
+  return st;
 }
 
-const LBL={ok:"проверено",bad:"пересорт",dup:"дубликат"};
 function render(){
   $("nExp").textContent=expected.size;$("nOk").textContent=seen.size;
   $("nBad").textContent=nBad;$("nDup").textContent=nDup;$("nLeft").textContent=expected.size-seen.size;
   const lg=$("log");lg.innerHTML="";
   log.slice(0,150).forEach(r=>{const tr=document.createElement("tr");tr.className=r.st;
-    [["t",r.time],["",r.code],["s",r.why.toLowerCase()]].forEach(([c,v])=>{const td=document.createElement("td");if(c)td.className=c;td.textContent=v;tr.append(td)});lg.append(tr)});
+    [["t",r.time],["",r.code],["s",r.why]].forEach(([c,v])=>{const td=document.createElement("td");if(c)td.className=c;td.textContent=v;tr.append(td)});lg.append(tr)});
   const lf=$("left");lf.innerHTML="";let i=0;
   for(const c of expected){if(!seen.has(c)){if(i++>=200)break;const tr=document.createElement("tr"),td=document.createElement("td");td.textContent=c;tr.append(td);lf.append(tr)}}
   const bi=$("badInvT");bi.innerHTML="";
@@ -181,46 +180,183 @@ function render(){
   $("badSec").hidden=!badInv.size;
 }
 
-/* ---------- камера: быстрый цикл распознавания DataMatrix ---------- */
-let stream=null,track=null,running=false,torchOn=false,reader=null,cv=null,cx=null,wake=null;
-let last="",lastT=0;
-let hlBox=null,hlT=0;
-function setBox(pts,g){
-  if(!pts||!pts.length||!g){hlBox=null;return}
-  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
-  pts.forEach(q=>{const x=g.sx+q.getX()*g.k,y=g.sy+q.getY()*g.k;x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)});
-  const pad=(x1-x0)*0.06;hlBox=[x0-pad,y0-pad,x1+pad,y1+pad];hlT=Date.now();
+/* ---------- мультискан: на кадре находятся участки с плотной «шашечной» текстурой (DataMatrix), каждый участок читается отдельно и параллельно ---------- */
+/*TILES-START*/
+function toGray(d,n){const g=new Uint8Array(n);for(let i=0,p=0;i<n;i++,p+=4)g[i]=(d[p]*77+d[p+1]*150+d[p+2]*29)>>8;return g}
+function density(g,FW,FH){
+  const B=8,bw=Math.floor(FW/B),bh=Math.floor(FH/B),c=new Uint16Array(bw*bh);
+  for(let y=0;y<bh*B-1;y++){
+    const row=(y/B|0)*bw;let p=y*FW;
+    for(let x=0;x<bw*B-1;x++,p++){const v=g[p];if(Math.abs(v-g[p+1])+Math.abs(v-g[p+FW])>40)c[row+(x/B|0)]++}
+  }
+  return {c,bw,bh,B};
 }
+function boxesAt(D,thr,FW,FH){
+  const {c,bw,bh,B}=D,m=new Uint8Array(bw*bh),m2=new Uint8Array(bw*bh),lim=thr*B*B,out=[];
+  for(let i=0;i<m.length;i++)m[i]=c[i]>lim?1:0;
+  for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){
+    let v=0;
+    for(let dy=-1;dy<=1&&!v;dy++)for(let dx=-1;dx<=1;dx++){const xx=x+dx,yy=y+dy;if(xx>=0&&yy>=0&&xx<bw&&yy<bh&&m[yy*bw+xx]){v=1;break}}
+    m2[y*bw+x]=v;
+  }
+  const seen=new Uint8Array(bw*bh);
+  for(let s0=0;s0<m2.length;s0++){
+    if(!m2[s0]||seen[s0])continue;
+    let x0=bw,y0=bh,x1=0,y1=0;const st=[s0];seen[s0]=1;
+    while(st.length){
+      const i=st.pop(),x=i%bw,y=(i/bw)|0;
+      if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+      const nb=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]];
+      for(const [a,b] of nb){if(a>=0&&b>=0&&a<bw&&b<bh){const j=b*bw+a;if(m2[j]&&!seen[j]){seen[j]=1;st.push(j)}}}
+    }
+    const w=(x1-x0+1)*B,h=(y1-y0+1)*B,r=w/h;
+    if(w<40||h<40||w>FW*0.95||h>FH*0.95||r<0.45||r>2.2)continue;
+    out.push([x0*B,y0*B,w,h]);
+  }
+  return out;
+}
+function makeRegions(d,FW,FH){
+  const g=toGray(d,FW*FH),D=density(g,FW,FH);
+  const all=boxesAt(D,0.28,FW,FH).concat(boxesAt(D,0.42,FW,FH)),keep=[];
+  for(const b of all){
+    if(keep.some(k=>Math.abs(k[0]-b[0])<k[2]*0.2&&Math.abs(k[1]-b[1])<k[3]*0.2&&Math.abs(k[2]-b[2])<k[2]*0.25))continue;
+    keep.push(b);
+  }
+  const tiles=[];
+  for(const [bx,by,bw0,bh0] of keep.slice(0,80)){
+    const mx=Math.round(bw0*0.12),my=Math.round(bh0*0.12);
+    const x=Math.max(0,bx-mx),y=Math.max(0,by-my),w=Math.min(FW-x,bw0+2*mx),h=Math.min(FH-y,bh0+2*my);
+    const lum=new Uint8ClampedArray(w*h);
+    for(let yy=0;yy<h;yy++)lum.set(g.subarray((y+yy)*FW+x,(y+yy)*FW+x+w),yy*w);
+    tiles.push({x,y,w,h,lum});
+  }
+  return tiles;
+}
+let mainReader=null;
+function decodeLocal(tiles){
+  mainReader=mainReader||new ZXing.DataMatrixReader();
+  const out=[];
+  for(const t of tiles){
+    try{
+      const r=mainReader.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.RGBLuminanceSource(t.lum,t.w,t.h))));
+      out.push({text:r.getText(),pts:r.getResultPoints().map(p=>[p.getX(),p.getY()]),x:t.x,y:t.y});
+    }catch(e){}
+  }
+  return out;
+}
+/*TILES-END*/
+
+const WSRC=`
+let R=null;
+onmessage=e=>{
+  const d=e.data;
+  if(d.init){try{importScripts(d.url);R=new ZXing.DataMatrixReader()}catch(err){postMessage({fail:1})}return}
+  const out=[];
+  if(R){for(const t of d.tiles){
+    try{
+      const r=R.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.RGBLuminanceSource(t.lum,t.w,t.h))));
+      out.push({text:r.getText(),pts:r.getResultPoints().map(p=>[p.getX(),p.getY()]),x:t.x,y:t.y});
+    }catch(err){}
+  }}
+  postMessage({id:d.id,out});
+};`;
+let pool=[],poolOk=false,rid=0;
+function initPool(){
+  if(pool.length)return;
+  try{
+    const url=URL.createObjectURL(new Blob([WSRC],{type:"text/javascript"}));
+    const n=Math.max(2,Math.min(4,(navigator.hardwareConcurrency||4)-1));
+    const zx=new URL("zxing.min.js",location.href).href;
+    for(let i=0;i<n;i++){
+      const w=new Worker(url);
+      w.onerror=()=>{poolOk=false};
+      w.addEventListener("message",e=>{if(e.data&&e.data.fail)poolOk=false});
+      w.postMessage({init:1,url:zx});pool.push(w);
+    }
+    poolOk=true;
+  }catch(e){poolOk=false}
+}
+function runTiles(tiles){
+  if(!poolOk)return Promise.resolve(decodeLocal(tiles));
+  return new Promise(res=>{
+    const id=++rid,n=pool.length,parts=Array.from({length:n},()=>[]);
+    tiles.forEach((t,i)=>parts[i%n].push(t));
+    let left=0,all=[];
+    const timer=setTimeout(()=>res(all),1500);
+    pool.forEach((w,i)=>{
+      if(!parts[i].length)return;left++;
+      w.onmessage=e=>{
+        if(e.data.fail){poolOk=false;return}
+        if(e.data.id!==id)return;
+        all=all.concat(e.data.out);
+        if(--left===0){clearTimeout(timer);res(all)}
+      };
+      w.postMessage({id,tiles:parts[i]},parts[i].map(t=>t.lum.buffer));
+    });
+    if(!left){clearTimeout(timer);res(all)}
+  });
+}
+
+/* ---------- отслеживание кодов в кадре и подсветка ---------- */
+const trk=new Map(); // ключ кода -> {st,box,t}
 const HLC={ok:"31,157,85",bad:"214,69,69",dup:"232,180,0"};
+const RANK={ok:1,dup:2,bad:3};
+function onResults(out,FW,vw){
+  const k=vw/FW,now=Date.now(),done=new Set();
+  let worst=null;
+  for(const r of out){
+    if(done.has(r.text))continue;done.add(r.text);
+    const p=parse(r.text);if(!p)continue;
+    const key=p.ok?p.head:"x"+r.text;
+    const xs=r.pts.map(q=>(r.x+q[0])*k),ys=r.pts.map(q=>(r.y+q[1])*k);
+    const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),pad=(x1-x0)*0.06;
+    const box=[x0-pad,y0-pad,x1+pad,y1+pad];
+    const e=trk.get(key);
+    if(e&&now-e.t<1200){e.t=now;e.box=box;continue} // тот же код всё ещё в кадре
+    const st=check(r.text);if(!st)continue;
+    trk.set(key,{st,box,t:now});
+    if(!worst||RANK[st]>RANK[worst])worst=st;
+  }
+  if(worst){feedback(worst);render()}
+  trk.forEach((e,key)=>{if(now-e.t>3000)trk.delete(key)});
+  return done.size;
+}
 function drawHL(){
   const c=$("hl"),v=$("video"),cw=c.clientWidth,ch=c.clientHeight;
   if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch}
   const g=c.getContext("2d");g.clearRect(0,0,cw,ch);
-  if(!hlBox||Date.now()-hlT>450||!HLC[hlSt]||!v.videoWidth)return;
-  const k=Math.max(cw/v.videoWidth,ch/v.videoHeight),ox=(cw-v.videoWidth*k)/2,oy=(ch-v.videoHeight*k)/2;
-  const x=ox+hlBox[0]*k,y=oy+hlBox[1]*k,w=(hlBox[2]-hlBox[0])*k,h=(hlBox[3]-hlBox[1])*k;
-  g.fillStyle="rgba("+HLC[hlSt]+",.45)";g.fillRect(x,y,w,h);
-  g.lineWidth=5;g.strokeStyle="rgb("+HLC[hlSt]+")";g.strokeRect(x,y,w,h);
+  if(!v.videoWidth)return;
+  const k=Math.max(cw/v.videoWidth,ch/v.videoHeight),ox=(cw-v.videoWidth*k)/2,oy=(ch-v.videoHeight*k)/2,now=Date.now();
+  trk.forEach(e=>{
+    if(now-e.t>450||!HLC[e.st])return;
+    const x=ox+e.box[0]*k,y=oy+e.box[1]*k,w=(e.box[2]-e.box[0])*k,h=(e.box[3]-e.box[1])*k;
+    g.fillStyle="rgba("+HLC[e.st]+",.45)";g.fillRect(x,y,w,h);
+    g.lineWidth=5;g.strokeStyle="rgb("+HLC[e.st]+")";g.strokeRect(x,y,w,h);
+  });
 }
-function onCode(text,pts,g){setBox(pts,g);
-  $("dbg").textContent="Считано с камеры: "+text.length+" символов";
-  const now=Date.now();
-  if(text===last&&now-lastT<1500){lastT=now;return} // тот же код в кадре не считаем повторно
-  last=text;lastT=now;process(text);
-}
-function loop(){
-  if(!running)return;
-  const v=$("video"),vw=v.videoWidth,vh=v.videoHeight;
-  if(vw&&vh){
-    const s=Math.floor(Math.min(vw,vh)*0.9),sx=(vw-s)>>1,sy=(vh-s)>>1,out=Math.min(560,s);
-    if(cv.width!==out){cv.width=out;cv.height=out}
-    cx.drawImage(v,sx,sy,s,s,0,0,out,out);
-    try{
-      const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(cv)));
-      const r=reader.decode(bmp);onCode(r.getText(),r.getResultPoints(),{sx,sy,k:s/out});
-    }catch(e){}
+
+/* ---------- камера ---------- */
+let stream=null,track=null,running=false,torchOn=false,cv=null,cx=null,wake=null;
+async function loop(){
+  let frames=0,fpsT=Date.now(),inFrame=0;
+  while(running){
+    const v=$("video");
+    if(v.videoWidth){
+      const FW=Math.min(+$("qual").value,v.videoWidth),FH=Math.round(FW*v.videoHeight/v.videoWidth);
+      if(cv.width!==FW||cv.height!==FH){cv.width=FW;cv.height=FH}
+      cx.drawImage(v,0,0,FW,FH);
+      const tiles=makeRegions(cx.getImageData(0,0,FW,FH).data,FW,FH);
+      let out=[];
+      try{out=await runTiles(tiles)}catch(e){}
+      if(!running)break;
+      inFrame=onResults(out,FW,v.videoWidth);
+      drawHL();
+      frames++;
+      const now=Date.now();
+      if(now-fpsT>=1000){$("dbg").textContent="Кадров в секунду: "+frames+" · кодов в кадре: "+inFrame+(poolOk?"":" · режим без потоков");frames=0;fpsT=now}
+    }
+    await new Promise(r=>setTimeout(r,0));
   }
-  drawHL();setTimeout(loop,0);
 }
 async function camStart(){
   $("camMsg").textContent="";
@@ -233,21 +369,21 @@ async function camStart(){
       if(cap.focusMode&&cap.focusMode.includes("continuous"))await track.applyConstraints({advanced:[{focusMode:"continuous"}]});
       $("btnTorch").hidden=!cap.torch}catch(e){}
     cv=document.createElement("canvas");cx=cv.getContext("2d",{willReadFrequently:true});
-    reader=new ZXing.DataMatrixReader();
+    initPool();
     try{if(navigator.wakeLock)wake=await navigator.wakeLock.request("screen")}catch(e){}
     $("off").hidden=true;$("btnCam").textContent="Выключить камеру";
-    show("idle","ГОТОВ","Наведите код в рамку");
-    running=true;loop();
+    show("idle");running=true;loop();
   }catch(e){
     camStop();$("camMsg").textContent="Камера не запустилась: "+(e&&e.message?e.message:e)+". Проверьте разрешение камеры в настройках телефона.";
   }
 }
 function camStop(){
-  running=false;torchOn=false;hlBox=null;
+  running=false;torchOn=false;trk.clear();
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
   track=null;$("video").srcObject=null;$("off").hidden=false;$("btnTorch").hidden=true;
   $("btnCam").textContent="Включить камеру";
   try{wake&&wake.release()}catch(e){}wake=null;
+  const c=$("hl");c.getContext("2d").clearRect(0,0,c.width,c.height);
 }
 $("btnCam").onclick=()=>{running?camStop():camStart()};
 $("btnTorch").onclick=async()=>{try{torchOn=!torchOn;await track.applyConstraints({advanced:[{torch:torchOn}]})}catch(e){}};
@@ -257,19 +393,19 @@ $("btnLoad").onclick=()=>loadInvoice($("invoice").value);
 $("btnFile").onclick=()=>$("file").click();
 $("file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{$("invoice").value=r.result;loadInvoice(r.result)};r.readAsText(f)};
-$("code").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const v=$("code").value;$("code").value="";process(v)}});
+$("code").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const v=$("code").value;$("code").value="";const st=check(v);if(st){feedback(st);render()}}});
 
 let armed=null;
 $("btnReset").onclick=()=>{
   const b=$("btnReset");
   if(!armed){b.textContent="Нажмите ещё раз для сброса";armed=setTimeout(()=>{armed=null;b.textContent="Сбросить сверку"},4000);return}
   clearTimeout(armed);armed=null;b.textContent="Сбросить сверку";
-  seen=new Set();log=[];nBad=0;nDup=0;last="";
-  show("idle","СВЕРКА СБРОШЕНА","Фактура осталась загруженной");render();
+  seen=new Set();log=[];nBad=0;nDup=0;trk.clear();
+  show("idle");render();
 };
 $("btnExport").onclick=()=>{
   const rows=[["время","код","статус"]];
-  log.slice().reverse().forEach(r=>rows.push([r.time,r.code,r.why.toLowerCase()]));
+  log.slice().reverse().forEach(r=>rows.push([r.time,r.code,r.why]));
   expected.forEach(c=>{if(!seen.has(c))rows.push(["",c,"не отсканирован"])});
   badInv.forEach((len,k)=>rows.push(["",k,"в фактуре длина "+len]));
   const csv="\ufeff"+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(";")).join("\r\n");
