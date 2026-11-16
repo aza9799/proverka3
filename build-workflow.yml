@@ -16,10 +16,28 @@ jobs:
           distribution: temurin
           java-version: 17
       - run: npm install
+      - name: Bundle native scanner bridge
+        run: npx esbuild src/native.js --bundle --format=iife --outfile=www/native.bundle.js
       - run: npx cap add android
-      - name: Add camera permission
+      - name: Android manifest and gradle setup
         run: |
-          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.VIBRATE" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n</manifest>#' android/app/src/main/AndroidManifest.xml
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.FLASHLIGHT" />\n    <uses-permission android:name="android.permission.VIBRATE" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n</manifest>#' $M
+          sed -i 's#</application>#    <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui"/>\n    </application>#' $M
+          sed -i 's/^android {/android {\n    buildFeatures {\n        dataBinding true\n    }/' android/app/build.gradle
+          grep -q "DEPENDENCIES" $M
+          grep -q "dataBinding true" android/app/build.gradle
+      - name: Patch scanner plugin (resolution, no vote delay, coordinates)
+        run: |
+          P=node_modules/@capacitor-mlkit/barcode-scanning/android/src/main/java/io/capawesome/capacitorjs/plugins/mlkit/barcodescanning
+          sed -i 's/votes >= 10/votes >= 1/' $P/BarcodeScanner.java
+          sed -i 's/new ImageAnalysis.Builder().setBackpressureStrategy/new ImageAnalysis.Builder().setTargetResolution(new android.util.Size(1080, 1920)).setBackpressureStrategy/' $P/BarcodeScanner.java
+          sed -i 's/new Preview.Builder().build()/new Preview.Builder().setTargetResolution(new android.util.Size(1080, 1920)).build()/' $P/BarcodeScanner.java
+          sed -i 's/Point displaySize = new Point(displayMetrics.widthPixels, displayMetrics.heightPixels);/Point displaySize = new Point(displayMetrics.widthPixels, displayMetrics.heightPixels); if (getBridge().getWebView().getWidth() > 0 \&\& getBridge().getWebView().getHeight() > 0) { displaySize = new Point(getBridge().getWebView().getWidth(), getBridge().getWebView().getHeight()); }/' $P/BarcodeScannerPlugin.java
+          grep -q "votes >= 1)" $P/BarcodeScanner.java
+          grep -q "ImageAnalysis.Builder().setTargetResolution" $P/BarcodeScanner.java
+          grep -q "Preview.Builder().setTargetResolution" $P/BarcodeScanner.java
+          grep -q "getBridge().getWebView().getWidth()" $P/BarcodeScannerPlugin.java
       - run: npx cap sync android
       - name: Build debug APK
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug
