@@ -5,68 +5,65 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Сверка маркировки</title>
 <style>
-:root{--bg:#f6f7f5;--surface:#fff;--text:#1b1f1c;--muted:#66706a;--line:#dfe3df;
+:root{--bg:#f6f7f5;--surface:#fff;--text:#1b1f1c;--muted:#66706a;--line:#dfe3df;--accent:#2f7de1;
 --ok:#1f9d55;--bad:#d64545;--dup:#e8b400;--idle:#6b756f;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
-@media (prefers-color-scheme:dark){:root{--bg:#121513;--surface:#1c211e;--text:#e9ede9;--muted:#9aa59e;--line:#2c332f;color-scheme:dark}}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1720;--surface:#16202b;--text:#e9eef4;--muted:#8b98a6;--line:#25313e;--accent:#5aa2ff;color-scheme:dark}}
 *{box-sizing:inherit}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 main{max-width:760px;margin:0 auto;padding:10px}
 h2{font-size:15px;margin:0 0 8px}
-section{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
 textarea,input[type=text]{width:100%;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px}
-textarea{min-height:100px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+textarea{min-height:90px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
 select,button{font:inherit;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:8px;padding:10px 14px;cursor:pointer}
-button.primary{background:var(--text);color:var(--bg);border-color:var(--text)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.big{width:100%;padding:16px;font-size:18px;font-weight:700;border-radius:12px}
 button[hidden]{display:none}
 label.chk{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:14px}
-
-#cam{position:relative;aspect-ratio:4/3;background:#000;border-radius:12px;overflow:hidden;border:8px solid var(--idle);transition:border-color .08s}
-#cam[data-st=ok]{border-color:var(--ok)}#cam[data-st=bad]{border-color:var(--bad)}#cam[data-st=dup]{border-color:var(--dup)}
-#video{width:100%;height:100%;object-fit:cover;display:block}
-#hl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-#off[hidden]{display:none!important}
-#off{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;padding:20px;text-align:center}
-
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
-.stat{text-align:center;border:1px solid var(--line);border-radius:8px;padding:6px 2px}
-.stat b{display:block;font-size:20px}.stat span{font-size:11px;color:var(--muted)}
-.stat.ok b{color:var(--ok)}.stat.bad b{color:var(--bad)}.stat.dup b{color:var(--dup)}
-.scroll{max-height:240px;overflow:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-td{padding:5px 6px;border-bottom:1px solid var(--line);word-break:break-all}
-td.t{white-space:nowrap;color:var(--muted)}
-tr.ok td.s{color:var(--ok)}tr.bad td.s{color:var(--bad)}tr.dup td.s{color:var(--dup)}
 .hint{color:var(--muted);font-size:13px;margin:6px 0 0}
-#camMsg{color:var(--bad);font-size:14px;margin:6px 0 0}
+details summary{cursor:pointer;font-weight:600}
+
+/* вкладки учёта */
+.tabs{display:flex;border-bottom:1px solid var(--line);margin:-12px -12px 0}
+.tab{flex:1;padding:13px 2px;text-align:center;font-weight:600;font-size:13px;border:0;background:none;border-bottom:3px solid transparent;color:var(--muted);border-radius:0}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.tab[data-t=ok].on{color:var(--ok);border-bottom-color:var(--ok)}
+.tab[data-t=bad].on{color:var(--bad);border-bottom-color:var(--bad)}
+#tabBody{min-height:240px;max-height:55vh;overflow:auto;padding-top:6px}
+.empty{height:220px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:600}
+.grp{font-size:12px;color:var(--muted);padding:10px 4px 4px;text-transform:uppercase;letter-spacing:.4px}
+.item{display:flex;justify-content:space-between;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line);font-size:13px}
+.item code{font-family:ui-monospace,Menlo,Consolas,monospace;word-break:break-all}
+.item span{color:var(--muted);white-space:nowrap}
+.item.ok{border-left:4px solid var(--ok);padding-left:8px}.item.bad{border-left:4px solid var(--bad);padding-left:8px}
+.item.dup{border-left:4px solid var(--dup);padding-left:8px}.item.left{border-left:4px solid var(--line);padding-left:8px}
+
+/* камера на весь экран */
+#camfull{position:fixed;inset:0;z-index:50;background:#000;touch-action:none}
+#camfull[hidden]{display:none}
+#video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#hl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.ring{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 0 transparent;transition:box-shadow .08s}
+#camfull[data-st=ok] .ring{box-shadow:inset 0 0 0 10px var(--ok)}
+#camfull[data-st=bad] .ring{box-shadow:inset 0 0 0 10px var(--bad)}
+#camfull[data-st=dup] .ring{box-shadow:inset 0 0 0 10px var(--dup)}
+#topbar{position:absolute;left:0;right:0;top:0;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px 10px;background:linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,0))}
+.pill{background:rgba(0,0,0,.55);color:#fff;border-radius:20px;padding:5px 11px;font-size:13px;white-space:nowrap}
+.pill b{font-size:17px;margin-right:4px}
+.pill.ok b{color:#4fe08c}.pill.bad b{color:#ff7b7b}.pill.dup b{color:#ffd23f}
+#camMsg{position:absolute;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 64px);text-align:center;color:#fff;background:rgba(214,69,69,.9);border-radius:10px;padding:8px 10px;font-size:14px}
+#camMsg:empty{display:none}
+#botbar{position:absolute;left:0;right:0;bottom:0;display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;padding:12px 12px calc(env(safe-area-inset-bottom,0px) + 14px);background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.75))}
+#botbar button,#botbar select{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.3)}
+#botbar option{color:#000}
+#botbar label.chk{color:#fff}
+#dbg{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 74px);text-align:center;color:rgba(255,255,255,.75);font-size:12px}
 </style>
 </head>
 <body>
 <main>
-
-<section>
-<div id="cam" data-st="idle">
-<video id="video" playsinline muted></video>
-<canvas id="hl"></canvas>
-<div id="off">Камера выключена</div>
-</div>
-<div id="camMsg"></div>
-<div class="hint" id="dbg"></div>
-<div class="row">
-<button class="primary" id="btnCam">Включить камеру</button>
-<button id="btnTorch" hidden>Фонарик</button>
-<select id="qual" title="Размер кадра"><option value="960">Быстро</option><option value="1280">Точнее (мелкие коды)</option></select>
-<label class="chk"><input type="checkbox" id="snd" checked>Звук</label>
-</div>
-<div class="stats">
-<div class="stat"><b id="nExp">0</b><span>в фактуре</span></div>
-<div class="stat ok"><b id="nOk">0</b><span>проверено</span></div>
-<div class="stat bad"><b id="nBad">0</b><span>пересорт</span></div>
-<div class="stat dup"><b id="nDup">0</b><span>дубли</span></div>
-<div class="stat"><b id="nLeft">0</b><span>осталось</span></div>
-</div>
-</section>
 
 <section>
 <h2>Коды из фактуры</h2>
@@ -79,35 +76,56 @@ tr.ok td.s{color:var(--ok)}tr.bad td.s{color:var(--bad)}tr.dup td.s{color:var(--
 <p class="hint" id="invInfo">Верным считается код ровно из 31 символа. Криптохвост не учитывается.</p>
 </section>
 
+<button class="primary big" id="btnScan" style="margin-bottom:12px">Сканировать камерой</button>
+
 <section>
-<h2>Ввод вручную</h2>
-<input type="text" id="code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Код и Enter">
+<div class="tabs">
+<button class="tab on" data-t="ok" id="tOk">Проверено (0)</button>
+<button class="tab" data-t="left" id="tLeft">Не проверено (0)</button>
+<button class="tab" data-t="bad" id="tBad">Пересорт (0)</button>
+</div>
+<div id="tabBody"></div>
+</section>
+
+<section>
+<details>
+<summary>Ввод вручную и отчёт</summary>
+<div style="margin-top:10px"><input type="text" id="code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Код и Enter"></div>
 <div class="row"><button id="btnExport">Скачать отчёт (CSV)</button><button id="btnReset">Сбросить сверку</button></div>
+</details>
 </section>
 
-<section>
-<h2>Журнал</h2>
-<div class="scroll"><table><tbody id="log"></tbody></table></div>
-</section>
-
-<section>
-<h2>Не отсканированы</h2>
-<div class="scroll"><table><tbody id="left"></tbody></table></div>
-</section>
-
-<section id="badSec" hidden>
-<h2>Ошибки в фактуре (длина не 31)</h2>
-<div class="scroll"><table><tbody id="badInvT"></tbody></table></div>
-</section>
-<p class="hint" style="text-align:center">Версия 5: мультисканер, строго 31 символ</p>
+<p class="hint" style="text-align:center">Версия 6.1: камера на весь экран, учёт кодов</p>
 </main>
+
+<div id="camfull" data-st="idle" hidden>
+<video id="video" playsinline muted></video>
+<canvas id="hl"></canvas>
+<div class="ring"></div>
+<div id="topbar">
+<div class="pill ok"><b id="cOk">0</b>проверено</div>
+<div class="pill bad"><b id="cBad">0</b>пересорт</div>
+<div class="pill dup"><b id="cDup">0</b>дубли</div>
+<div class="pill"><b id="cLeft">0</b>осталось</div>
+</div>
+<div id="camMsg"></div>
+<div id="dbg"></div>
+<div id="botbar">
+<button id="btnClose">Закрыть</button>
+<button id="btnTorch" hidden>Фонарик</button>
+<select id="qual" title="Размер кадра"><option value="960">Быстро</option><option value="1280">Точнее</option></select>
+<label class="chk"><input type="checkbox" id="snd" checked>Звук</label>
+</div>
+</div>
 
 <script src="zxing.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const expected=new Set();      // коды из фактуры (ровно 31 символ)
 const badInv=new Map();        // первые 31 символ -> реальная длина (ошибка поставщика)
-let seen=new Set(),log=[],nBad=0,nDup=0;
+let seen=new Map();            // проверенные: код -> время
+let badMap=new Map();          // пересорт: ключ -> {code,why,time}
+let dupMap=new Map();          // дубликаты: код -> число повторов
 
 /* ---------- разбор кода: берём только часть до криптохвоста ---------- */
 function parse(raw,strict){
@@ -137,17 +155,17 @@ function feedback(st){
   else if(st==="dup"){beep(520,.18);vib([50,50,50])}
   else if(st==="ok"){beep(900,.07);vib(30)}
 }
-function show(st){$("cam").dataset.st=st}
+function show(st){$("camfull").dataset.st=st}
 
 /* ---------- фактура ---------- */
 function loadInvoice(text){
-  expected.clear();badInv.clear();seen=new Set();log=[];nBad=0;nDup=0;
+  expected.clear();badInv.clear();seen=new Map();badMap=new Map();dupMap=new Map();
   text.split(/\r?\n/).forEach(l=>{
     const p=parse(l,true);if(!p)return;
     if(p.ok)expected.add(p.head);else badInv.set(p.head.slice(0,31),p.len);
   });
-  $("invInfo").textContent="Кодов: "+expected.size+". Ошибок длины в фактуре: "+badInv.size+".";
-  show("idle");render();
+  $("invInfo").textContent="В фактуре кодов: "+expected.size+". Ошибок длины в фактуре: "+badInv.size+(badInv.size?" Они не участвуют в сверке, список есть в отчёте CSV":"")+".";
+  show("idle");render(true);
 }
 
 /* ---------- проверка одного кода; возвращает ok / dup / bad ---------- */
@@ -155,30 +173,53 @@ function check(raw){
   const p=parse(raw);if(!p)return null;
   if(!expected.size&&!badInv.size){$("camMsg").textContent="Сначала загрузите фактуру";return "bad"}
   $("camMsg").textContent="";
-  let st,why;
-  if(!p.ok){st="bad";why="неверная длина ("+p.len+")"}
-  else if(seen.has(p.head)){st="dup";why="дубликат"}
-  else if(expected.has(p.head)){st="ok";seen.add(p.head);why="проверено"}
-  else if(badInv.has(p.head)){st="bad";why="ошибка в фактуре (длина "+badInv.get(p.head)+")"}
-  else{st="bad";why="пересорт"}
-  if(st==="bad")nBad++;if(st==="dup")nDup++;
+  const t=new Date().toLocaleTimeString("ru-RU");
+  let st;
+  if(!p.ok){st="bad";badMap.set("len:"+p.head,{code:p.head,why:"неверная длина ("+p.len+")",time:t})}
+  else if(seen.has(p.head)){st="dup";dupMap.set(p.head,(dupMap.get(p.head)||0)+1)}
+  else if(expected.has(p.head)){st="ok";seen.set(p.head,t)}
+  else if(badInv.has(p.head)){st="bad";badMap.set(p.head,{code:p.head,why:"ошибка в фактуре (длина "+badInv.get(p.head)+")",time:t})}
+  else{st="bad";badMap.set(p.head,{code:p.head,why:"пересорт",time:t})}
   show(st);
-  log.unshift({time:new Date().toLocaleTimeString("ru-RU"),code:p.head,st,why});
   return st;
 }
 
-function render(){
-  $("nExp").textContent=expected.size;$("nOk").textContent=seen.size;
-  $("nBad").textContent=nBad;$("nDup").textContent=nDup;$("nLeft").textContent=expected.size-seen.size;
-  const lg=$("log");lg.innerHTML="";
-  log.slice(0,150).forEach(r=>{const tr=document.createElement("tr");tr.className=r.st;
-    [["t",r.time],["",r.code],["s",r.why]].forEach(([c,v])=>{const td=document.createElement("td");if(c)td.className=c;td.textContent=v;tr.append(td)});lg.append(tr)});
-  const lf=$("left");lf.innerHTML="";let i=0;
-  for(const c of expected){if(!seen.has(c)){if(i++>=200)break;const tr=document.createElement("tr"),td=document.createElement("td");td.textContent=c;tr.append(td);lf.append(tr)}}
-  const bi=$("badInvT");bi.innerHTML="";
-  badInv.forEach((len,k)=>{const tr=document.createElement("tr");[k,"длина "+len].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.append(td)});bi.append(tr)});
-  $("badSec").hidden=!badInv.size;
+/* ---------- окно учёта: проверено / не проверено / пересорт / дубли ---------- */
+let tab="ok";
+function rowsFor(t){
+  if(t==="ok")return [...seen].map(([c,tm])=>({code:c,r:tm}));
+  if(t==="left")return [...expected].filter(c=>!seen.has(c)).map(c=>({code:c,r:""}));
+  if(t==="bad")return [...badMap.values()].map(v=>({code:v.code,r:v.why}));
+  return [...dupMap].map(([c,n])=>({code:c,r:"повторов: "+n}));
 }
+function counts(){return {ok:seen.size,left:expected.size-seen.size,bad:badMap.size,dup:dupMap.size}}
+function render(full){
+  const n=counts();
+  $("cOk").textContent=n.ok;$("cBad").textContent=n.bad;$("cDup").textContent=n.dup;$("cLeft").textContent=n.left;
+  if(!full&&!$("camfull").hidden)return; // пока открыта камера, список не перерисовываем
+  $("tOk").textContent="Проверено ("+n.ok+")";$("tLeft").textContent="Не проверено ("+n.left+")";
+  $("tBad").textContent="Пересорт ("+n.bad+")";
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.t===tab));
+  const body=$("tabBody");body.innerHTML="";
+  const rows=rowsFor(tab);
+  if(!rows.length){const d=document.createElement("div");d.className="empty";d.textContent="нет кодов";body.append(d);return}
+  const groups=new Map();
+  rows.forEach(r=>{const g=r.code.length>=16?r.code.slice(2,16):"—";if(!groups.has(g))groups.set(g,[]);groups.get(g).push(r)});
+  let shown=0;
+  for(const [g,list] of groups){
+    if(shown>=300)break;
+    const h=document.createElement("div");h.className="grp";h.textContent="GTIN "+g+" · "+list.length;body.append(h);
+    for(const r of list){
+      if(shown++>=300)break;
+      const it=document.createElement("div");it.className="item "+tab;
+      const c=document.createElement("code");c.textContent=r.code;
+      const sp=document.createElement("span");sp.textContent=r.r;
+      it.append(c,sp);body.append(it);
+    }
+  }
+  if(rows.length>300){const d=document.createElement("div");d.className="hint";d.textContent="Показаны первые 300 из "+rows.length+". Полный список в отчёте CSV.";body.append(d)}
+}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{tab=b.dataset.t;render(true)});
 
 /* ---------- мультискан: на кадре находятся участки с плотной «шашечной» текстурой (DataMatrix), каждый участок читается отдельно и параллельно ---------- */
 /*TILES-START*/
@@ -335,7 +376,7 @@ function drawHL(){
   });
 }
 
-/* ---------- камера ---------- */
+/* ---------- камера на весь экран ---------- */
 let stream=null,track=null,running=false,torchOn=false,cv=null,cx=null,wake=null;
 async function loop(){
   let frames=0,fpsT=Date.now(),inFrame=0;
@@ -371,7 +412,6 @@ async function camStart(){
     cv=document.createElement("canvas");cx=cv.getContext("2d",{willReadFrequently:true});
     initPool();
     try{if(navigator.wakeLock)wake=await navigator.wakeLock.request("screen")}catch(e){}
-    $("off").hidden=true;$("btnCam").textContent="Выключить камеру";
     show("idle");running=true;loop();
   }catch(e){
     camStop();$("camMsg").textContent="Камера не запустилась: "+(e&&e.message?e.message:e)+". Проверьте разрешение камеры в настройках телефона.";
@@ -380,12 +420,22 @@ async function camStart(){
 function camStop(){
   running=false;torchOn=false;trk.clear();
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
-  track=null;$("video").srcObject=null;$("off").hidden=false;$("btnTorch").hidden=true;
-  $("btnCam").textContent="Включить камеру";
+  track=null;$("video").srcObject=null;$("btnTorch").hidden=true;
   try{wake&&wake.release()}catch(e){}wake=null;
   const c=$("hl");c.getContext("2d").clearRect(0,0,c.width,c.height);
 }
-$("btnCam").onclick=()=>{running?camStop():camStart()};
+function openCam(){
+  $("camfull").hidden=false;document.body.style.overflow="hidden";
+  try{history.pushState({cam:1},"")}catch(e){}
+  camStart();
+}
+function closeCam(){
+  camStop();$("camfull").hidden=true;document.body.style.overflow="";$("camMsg").textContent="";
+  render(true);
+}
+$("btnScan").onclick=openCam;
+$("btnClose").onclick=()=>{if(history.state&&history.state.cam)history.back();else closeCam()};
+window.addEventListener("popstate",()=>{if(!$("camfull").hidden)closeCam()});
 $("btnTorch").onclick=async()=>{try{torchOn=!torchOn;await track.applyConstraints({advanced:[{torch:torchOn}]})}catch(e){}};
 
 /* ---------- прочее ---------- */
@@ -393,25 +443,27 @@ $("btnLoad").onclick=()=>loadInvoice($("invoice").value);
 $("btnFile").onclick=()=>$("file").click();
 $("file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{$("invoice").value=r.result;loadInvoice(r.result)};r.readAsText(f)};
-$("code").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const v=$("code").value;$("code").value="";const st=check(v);if(st){feedback(st);render()}}});
+$("code").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const v=$("code").value;$("code").value="";const st=check(v);if(st){feedback(st);render(true)}}});
 
 let armed=null;
 $("btnReset").onclick=()=>{
   const b=$("btnReset");
   if(!armed){b.textContent="Нажмите ещё раз для сброса";armed=setTimeout(()=>{armed=null;b.textContent="Сбросить сверку"},4000);return}
   clearTimeout(armed);armed=null;b.textContent="Сбросить сверку";
-  seen=new Set();log=[];nBad=0;nDup=0;trk.clear();
-  show("idle");render();
+  seen=new Map();badMap=new Map();dupMap=new Map();trk.clear();
+  show("idle");render(true);
 };
 $("btnExport").onclick=()=>{
-  const rows=[["время","код","статус"]];
-  log.slice().reverse().forEach(r=>rows.push([r.time,r.code,r.why]));
-  expected.forEach(c=>{if(!seen.has(c))rows.push(["",c,"не отсканирован"])});
-  badInv.forEach((len,k)=>rows.push(["",k,"в фактуре длина "+len]));
+  const rows=[["статус","код","время / причина"]];
+  seen.forEach((t,c)=>rows.push(["проверено",c,t]));
+  expected.forEach(c=>{if(!seen.has(c))rows.push(["не проверено",c,""])});
+  badMap.forEach(v=>rows.push(["пересорт",v.code,v.why]));
+  dupMap.forEach((n,c)=>rows.push(["дубликат",c,"повторов: "+n]));
+  badInv.forEach((len,k)=>rows.push(["ошибка в фактуре",k,"длина "+len]));
   const csv="\ufeff"+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(";")).join("\r\n");
   const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download="sverka.csv";a.click();
 };
-render();
+render(true);
 </script>
 </body>
 </html>
