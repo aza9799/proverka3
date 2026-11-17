@@ -6,41 +6,53 @@
 <title>Сверка маркировки</title>
 <style>
 :root{--bg:#f6f7f5;--surface:#fff;--text:#1b1f1c;--muted:#66706a;--line:#dfe3df;--accent:#2f7de1;
---ok:#1f9d55;--bad:#d64545;--dup:#e8b400;--idle:#6b756f;
+--ok:#1f9d55;--bad:#d64545;--dup:#e8b400;--grp:#3b82f6;--idle:#6b756f;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#0f1720;--surface:#16202b;--text:#e9eef4;--muted:#8b98a6;--line:#25313e;--accent:#5aa2ff;color-scheme:dark}}
 *{box-sizing:inherit}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 main{max-width:760px;margin:0 auto;padding:10px}
+main[hidden]{display:none}
+h1{font-size:20px;margin:6px 2px 10px}
 h2{font-size:15px;margin:0 0 8px}
 section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
-textarea,input[type=text]{width:100%;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px}
-textarea{min-height:90px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
-.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
+textarea,input[type=text]{width:100%;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px}
+textarea{min-height:100px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;align-items:center}
 select,button{font:inherit;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:8px;padding:10px 14px;cursor:pointer}
 button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-button.big{width:100%;padding:16px;font-size:18px;font-weight:700;border-radius:12px}
+button.big{width:100%;padding:15px;font-size:18px;font-weight:700;border-radius:12px;margin-bottom:12px}
+button.sm{padding:6px 10px;font-size:13px}
 button[hidden]{display:none}
 label.chk{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:14px}
 .hint{color:var(--muted);font-size:13px;margin:6px 0 0}
 details summary{cursor:pointer;font-weight:600}
-
-/* вкладки учёта */
+.bar{display:flex;align-items:center;gap:10px;margin:2px 0 10px}
+.bar button{padding:8px 14px;font-size:18px}
+.ttl{font-weight:700;font-size:17px;line-height:1.25}
+.sub{color:var(--muted);font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer}
+.card .t{font-weight:700}.card .s{color:var(--muted);font-size:13px;margin-top:2px}
+.pb{height:6px;background:var(--line);border-radius:4px;margin-top:8px;overflow:hidden}
+.pb i{display:block;height:100%;background:var(--accent)}
+.pb.done i{background:var(--ok)}
+.prow{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:12px;padding:10px 10px 10px 12px;margin-bottom:8px;cursor:pointer}
+.prow.part{border-left-color:var(--dup)}.prow.done{border-left-color:var(--ok)}.prow.err{border-left-color:var(--bad)}
+.prow .pm{flex:1;min-width:0}.prow .pn{font-weight:600;line-height:1.25;word-break:break-word}
+.prow .pc{white-space:nowrap;font-size:13px;color:var(--muted)}.prow .pc b{font-size:18px;color:var(--text)}
+.empty{height:160px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:600}
 .tabs{display:flex;border-bottom:1px solid var(--line);margin:-12px -12px 0}
 .tab{flex:1;padding:13px 2px;text-align:center;font-weight:600;font-size:13px;border:0;background:none;border-bottom:3px solid transparent;color:var(--muted);border-radius:0}
 .tab.on{color:var(--accent);border-bottom-color:var(--accent)}
 .tab[data-t=ok].on{color:var(--ok);border-bottom-color:var(--ok)}
 .tab[data-t=bad].on{color:var(--bad);border-bottom-color:var(--bad)}
-#tabBody{min-height:240px;max-height:55vh;overflow:auto;padding-top:6px}
-.empty{height:220px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:600}
-.grp{font-size:12px;color:var(--muted);padding:10px 4px 4px;text-transform:uppercase;letter-spacing:.4px}
-.item{display:flex;justify-content:space-between;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line);font-size:13px}
+#tabBody{min-height:200px;max-height:48vh;overflow:auto;padding-top:6px}
+.item{display:flex;justify-content:space-between;gap:10px;padding:8px 4px 8px 8px;border-bottom:1px solid var(--line);font-size:13px;border-left:4px solid var(--line)}
 .item code{font-family:ui-monospace,Menlo,Consolas,monospace;word-break:break-all}
-.item span{color:var(--muted);white-space:nowrap}
-.item.ok{border-left:4px solid var(--ok);padding-left:8px}.item.bad{border-left:4px solid var(--bad);padding-left:8px}
-.item.dup{border-left:4px solid var(--dup);padding-left:8px}.item.left{border-left:4px solid var(--line);padding-left:8px}
+.item span{color:var(--muted);text-align:right}
+.item.ok{border-left-color:var(--ok)}.item.bad{border-left-color:var(--bad)}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);background:rgba(20,24,22,.92);color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;z-index:99;display:none}
 
-/* камера на весь экран */
 #camfull{position:fixed;inset:0;z-index:50;background:#000;touch-action:none}
 #camfull[hidden]{display:none}
 #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -49,11 +61,15 @@ details summary{cursor:pointer;font-weight:600}
 #camfull[data-st=ok] .ring{box-shadow:inset 0 0 0 10px var(--ok)}
 #camfull[data-st=bad] .ring{box-shadow:inset 0 0 0 10px var(--bad)}
 #camfull[data-st=dup] .ring{box-shadow:inset 0 0 0 10px var(--dup)}
-#topbar{position:absolute;left:0;right:0;top:0;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px 10px;background:linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,0))}
+#camfull[data-st=grp] .ring{box-shadow:inset 0 0 0 10px var(--grp)}
+#topbar{position:absolute;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 12px;background:linear-gradient(rgba(0,0,0,.75),rgba(0,0,0,0));text-align:center}
+#camTitle{color:#fff;font-weight:700;font-size:15px;margin-bottom:8px;text-shadow:0 1px 3px #000}
+.pills{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
 .pill{background:rgba(0,0,0,.55);color:#fff;border-radius:20px;padding:5px 11px;font-size:13px;white-space:nowrap}
 .pill b{font-size:17px;margin-right:4px}
 .pill.ok b{color:#4fe08c}.pill.bad b{color:#ff7b7b}.pill.dup b{color:#ffd23f}
-#camMsg{position:absolute;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 64px);text-align:center;color:#fff;background:rgba(214,69,69,.9);border-radius:10px;padding:8px 10px;font-size:14px}
+#camMsg{position:absolute;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 96px);text-align:center;color:#fff;background:rgba(214,69,69,.92);border-radius:10px;padding:8px 10px;font-size:14px}
+#camMsg.info{background:rgba(59,130,246,.92)}
 #camMsg:empty{display:none}
 #botbar{position:absolute;left:0;right:0;bottom:0;display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;padding:12px 12px calc(env(safe-area-inset-bottom,0px) + 14px);background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.75))}
 #botbar button,#botbar select{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.3)}
@@ -67,21 +83,40 @@ body.barcode-scanner-active #video{display:none}
 </style>
 </head>
 <body>
-<main>
-
+<main id="vHome">
+<h1>Фактуры</h1>
 <section>
-<h2>Коды из фактуры</h2>
-<textarea id="invoice" placeholder="Вставьте коды из фактуры, по одному в строке"></textarea>
+<h2>Загрузить фактуру</h2>
+<input type="text" id="docTitle" placeholder="Название (необязательно): поставщик, номер">
+<textarea id="invoice" placeholder="Вставьте текст фактуры (товары и коды) или выберите файл"></textarea>
 <div class="row">
-<button class="primary" id="btnLoad">Загрузить фактуру</button>
-<button id="btnFile">Из файла (.txt, .csv)</button>
-<input type="file" id="file" accept=".txt,.csv" hidden>
+<button class="primary" id="btnLoad">Создать документ</button>
+<button id="btnFile">Из файла (.txt)</button>
+<input type="file" id="file" accept=".txt,.csv,text/plain" hidden>
 </div>
-<p class="hint" id="invInfo">Верным считается код ровно из 31 символа. Криптохвост не учитывается.</p>
+<p class="hint" id="loadMsg"></p>
 </section>
+<div id="docList"></div>
+<p class="hint" style="text-align:center">Версия 8: сверка потребительских и групповых кодов</p>
+</main>
 
-<button class="primary big" id="btnScan" style="margin-bottom:12px">Сканировать камерой</button>
+<main id="vDoc" hidden>
+<div class="bar"><button id="bkHome">←</button><div><div class="ttl" id="docName"></div><div class="sub" id="docSum"></div></div></div>
+<input type="text" id="search" placeholder="поиск по товару">
+<div id="prodList"></div>
+<section>
+<details>
+<summary>Отчёт и ошибки в фактуре</summary>
+<div class="row" style="margin-top:10px"><button class="sm" id="btnRepCopy">Копировать отчёт</button><button class="sm" id="btnRepCsv">Скачать CSV</button></div>
+<div id="invErr" class="hint"></div>
+</details>
+</section>
+</main>
 
+<main id="vProd" hidden>
+<div class="bar"><button id="bkDoc">←</button><div><div class="ttl" id="prodName"></div><div class="sub" id="prodSum"></div></div></div>
+<button class="primary big" id="btnScanProd">Сканировать</button>
+<p class="hint" style="margin:-4px 2px 10px">Групповой код сейчас засчитывается как один код. Сколько упаковок внутри, станет известно после подключения Xtrace.</p>
 <section>
 <div class="tabs">
 <button class="tab on" data-t="ok" id="tOk">Проверено (0)</button>
@@ -89,17 +124,17 @@ body.barcode-scanner-active #video{display:none}
 <button class="tab" data-t="bad" id="tBad">Пересорт (0)</button>
 </div>
 <div id="tabBody"></div>
+<div class="row">
+<button class="sm" id="btnCpOk">Копировать проверенные</button>
+<button class="sm" id="btnCpLeft">Копировать не проверенные</button>
+<button class="sm" id="btnCpBad">Копировать пересорт</button>
+</div>
 </section>
-
 <section>
-<details>
-<summary>Ввод вручную и отчёт</summary>
+<details><summary>Ввод кода вручную</summary>
 <div style="margin-top:10px"><input type="text" id="code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Код и Enter"></div>
-<div class="row"><button id="btnExport">Скачать отчёт (CSV)</button><button id="btnReset">Сбросить сверку</button></div>
 </details>
 </section>
-
-<p class="hint" style="text-align:center">Версия 7: встроенный распознаватель Android (ML Kit)</p>
 </main>
 
 <div id="camfull" data-st="idle" hidden>
@@ -107,10 +142,13 @@ body.barcode-scanner-active #video{display:none}
 <canvas id="hl"></canvas>
 <div class="ring"></div>
 <div id="topbar">
+<div id="camTitle"></div>
+<div class="pills">
 <div class="pill ok"><b id="cOk">0</b>проверено</div>
 <div class="pill bad"><b id="cBad">0</b>пересорт</div>
 <div class="pill dup"><b id="cDup">0</b>дубли</div>
 <div class="pill"><b id="cLeft">0</b>осталось</div>
+</div>
 </div>
 <div id="camMsg"></div>
 <div id="dbg"></div>
@@ -122,16 +160,31 @@ body.barcode-scanner-active #video{display:none}
 <label class="chk"><input type="checkbox" id="snd" checked>Звук</label>
 </div>
 </div>
+<div id="toast"></div>
 
 <script src="native.bundle.js"></script>
 <script src="zxing.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-const expected=new Set();      // коды из фактуры (ровно 31 символ)
-const badInv=new Map();        // первые 31 символ -> реальная длина (ошибка поставщика)
-let seen=new Map();            // проверенные: код -> время
-let badMap=new Map();          // пересорт: ключ -> {code,why,time}
-let dupMap=new Map();          // дубликаты: код -> число повторов
+
+/* ---------- хранение: документы живут на телефоне ---------- */
+const KEY="markscan.docs.v1";
+let docs=[];
+try{docs=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){docs=[]}
+docs.forEach(d=>d.products.forEach(p=>{p.group=p.group||[];p.gseen=p.gseen||{}}));
+let saveT=null;
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(docs))}catch(e){}},500)}
+const cache=new Map();
+function dc(doc){
+  let c=cache.get(doc.id);
+  if(!c){c={owner:new Map(),sets:[],gowner:new Map(),gsets:[]};
+    doc.products.forEach((p,i)=>{c.sets[i]=new Set(p.codes);p.codes.forEach(code=>c.owner.set(code,i));c.gsets[i]=new Set(p.group);p.group.forEach(g=>c.gowner.set(g,i))});
+    cache.set(doc.id,c)}
+  return c;
+}
+let curDoc=null,curProd=null,curIdx=-1,view="home";
+const ps=p=>({tot:p.codes.length+p.group.length,ok:Object.keys(p.seen).length+Object.keys(p.gseen).length,bad:Object.keys(p.bad).length,dup:Object.keys(p.dup).length});
+const pg=p=>({c:p.codes.length,cok:Object.keys(p.seen).length,g:p.group.length,gok:Object.keys(p.gseen).length});
 
 /* ---------- разбор кода: берём только часть до криптохвоста ---------- */
 function parse(raw,strict){
@@ -147,6 +200,42 @@ function parse(raw,strict){
   return {head,len:head.length,ok:head.length===31};
 }
 
+/* ---------- разбор файла фактуры: товар -> его коды ---------- */
+function normGrp(s){let t=String(s||"").replace(/[()\s\u001d]/g,"");if(/^\d{18}$/.test(t))t="00"+t;return t}
+function parseInvoice(text){
+  const prods=[],errors=[];let cur=null,sec="c";
+  const mk=(name,cat)=>{const p={name,cat:cat||"",codes:[],seen:{},bad:{},dup:{},group:[],gseen:{}};prods.push(p);return p};
+  for(const raw of String(text).split(/\r?\n/)){
+    const l=raw.replace(/\u00a0/g," ").trim();
+    if(!l)continue;
+    if(/^Потребительская/i.test(l)){sec="c";continue}
+    if(/^Групповая/i.test(l)){sec="g";continue}
+    if(/^Транспортная/i.test(l)){sec="t";continue}
+    if(/\s/.test(l)){ // строка с пробелами или табами: заголовок товара
+      const parts=l.split(/\t+/).map(x=>x.trim()).filter(Boolean);
+      let name,cat="";
+      if(parts.length>=2&&/^\d+$/.test(parts[0])){name=parts[1];cat=parts[2]||""}
+      else{const m=l.match(/^\d+[\s.)]+(.+)$/);name=m?m[1]:l}
+      cur=mk(name,cat);sec="c";continue;
+    }
+    if(!cur)cur=mk("Без названия","");
+    if(sec==="c"){
+      const p=parse(l,true);if(!p)continue;
+      if(p.ok){if(!cur.codes.includes(p.head))cur.codes.push(p.head)}
+      else errors.push({prod:cur.name,code:p.head,len:p.len});
+    }else{const g=normGrp(l);if(g&&!cur.group.includes(g))cur.group.push(g)}
+  }
+  return {prods:prods.filter(p=>p.codes.length||p.group.length),errors};
+}
+function createDoc(text,title){
+  const r=parseInvoice(text);
+  if(!r.prods.length)return null;
+  const d=new Date();
+  const doc={id:d.getTime().toString(36),title:title||("Фактура "+d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})),
+    created:d.toISOString(),products:r.prods,errors:r.errors,sscc:{}};
+  docs.unshift(doc);save();return doc;
+}
+
 /* ---------- звук ---------- */
 let AC=null;
 function beep(f,d){
@@ -160,72 +249,162 @@ function feedback(st){
   if(st==="bad"){beep(200,.4);vib(200)}
   else if(st==="dup"){beep(520,.18);vib([50,50,50])}
   else if(st==="ok"){beep(900,.07);vib(30)}
+  else if(st==="grp"){beep(700,.12);vib(60)}
 }
 function show(st){$("camfull").dataset.st=st}
-
-/* ---------- фактура ---------- */
-function loadInvoice(text){
-  expected.clear();badInv.clear();seen=new Map();badMap=new Map();dupMap=new Map();
-  text.split(/\r?\n/).forEach(l=>{
-    const p=parse(l,true);if(!p)return;
-    if(p.ok)expected.add(p.head);else badInv.set(p.head.slice(0,31),p.len);
-  });
-  $("invInfo").textContent="В фактуре кодов: "+expected.size+". Ошибок длины в фактуре: "+badInv.size+(badInv.size?" Они не участвуют в сверке, список есть в отчёте CSV":"")+".";
-  show("idle");render(true);
+let flashT=null;
+function flash(msg,kind){
+  const m=$("camMsg");m.textContent=msg;m.className=kind||"";
+  clearTimeout(flashT);flashT=setTimeout(()=>{m.textContent=""},2600);
 }
+let toastT=null;
+function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(toastT);toastT=setTimeout(()=>{e.style.display="none"},1800)}
 
-/* ---------- проверка одного кода; возвращает ok / dup / bad ---------- */
+/* ---------- проверка кода внутри выбранного товара: ok / dup / bad / grp ---------- */
 function check(raw){
+  if(!curDoc||!curProd)return null;
+  const t=String(raw||"").replace(/[()\s\u001d]/g,"");
+  const time=new Date().toLocaleTimeString("ru-RU");
+  if(/^00\d{18}$/.test(t)){ // групповой (агрегационный) код SSCC: сверка по файлу, состав внутри придёт из Xtrace
+    const c=dc(curDoc);let st;
+    if(curProd.gseen[t]){st="dup";curProd.dup[t]=(curProd.dup[t]||0)+1}
+    else if(c.gsets[curIdx].has(t)){st="ok";curProd.gseen[t]=time}
+    else if(c.gowner.has(t)){const other=curDoc.products[c.gowner.get(t)];st="bad";curProd.bad[t]={code:t,why:"пересорт: групповой код товара «"+other.name+"»",time};flash("Пересорт: групповой код товара «"+other.name+"»")}
+    else{st="bad";curProd.bad[t]={code:t,why:"групповой код не из фактуры",time};flash("Группового кода нет в фактуре")}
+    show(st);save();return st;
+  }
   const p=parse(raw);if(!p)return null;
-  if(!expected.size&&!badInv.size){$("camMsg").textContent="Сначала загрузите фактуру";return "bad"}
-  $("camMsg").textContent="";
-  const t=new Date().toLocaleTimeString("ru-RU");
-  let st;
-  if(!p.ok){st="bad";badMap.set("len:"+p.head,{code:p.head,why:"неверная длина ("+p.len+")",time:t})}
-  else if(seen.has(p.head)){st="dup";dupMap.set(p.head,(dupMap.get(p.head)||0)+1)}
-  else if(expected.has(p.head)){st="ok";seen.set(p.head,t)}
-  else if(badInv.has(p.head)){st="bad";badMap.set(p.head,{code:p.head,why:"ошибка в фактуре (длина "+badInv.get(p.head)+")",time:t})}
-  else{st="bad";badMap.set(p.head,{code:p.head,why:"пересорт",time:t})}
-  show(st);
+  const c=dc(curDoc);let st;
+  if(!p.ok){st="bad";curProd.bad["len:"+p.head]={code:p.head,why:"неверная длина ("+p.len+")",time};flash("Неверная длина кода: "+p.len+" символов")}
+  else if(curProd.seen[p.head]){st="dup";curProd.dup[p.head]=(curProd.dup[p.head]||0)+1}
+  else if(c.sets[curIdx].has(p.head)){st="ok";curProd.seen[p.head]=time}
+  else if(c.owner.has(p.head)){
+    const other=curDoc.products[c.owner.get(p.head)];
+    st="bad";curProd.bad[p.head]={code:p.head,why:"пересорт: это «"+other.name+"»",time};flash("Пересорт: этот код товара «"+other.name+"»");
+  }else{st="bad";curProd.bad[p.head]={code:p.head,why:"нет в фактуре",time};flash("Кода нет в фактуре")}
+  show(st);save();
   return st;
 }
 
-/* ---------- окно учёта: проверено / не проверено / пересорт / дубли ---------- */
-let tab="ok";
-function rowsFor(t){
-  if(t==="ok")return [...seen].map(([c,tm])=>({code:c,r:tm}));
-  if(t==="left")return [...expected].filter(c=>!seen.has(c)).map(c=>({code:c,r:""}));
-  if(t==="bad")return [...badMap.values()].map(v=>({code:v.code,r:v.why}));
-  return [...dupMap].map(([c,n])=>({code:c,r:"повторов: "+n}));
+/* ---------- навигация ---------- */
+const VIEWS={home:"vHome",doc:"vDoc",prod:"vProd"};
+function setView(v){
+  view=v;for(const k in VIEWS)$(VIEWS[k]).hidden=(k!==v);
+  window.scrollTo(0,0);render(true);
 }
-function counts(){return {ok:seen.size,left:expected.size-seen.size,bad:badMap.size,dup:dupMap.size}}
+function go(v){try{history.pushState({v},"")}catch(e){}setView(v)}
+window.addEventListener("popstate",()=>{
+  if(!$("camfull").hidden){closeCam();return}
+  if(view==="prod")setView("doc");else if(view==="doc")setView("home");
+});
+const back=()=>history.back();
+
+/* ---------- экраны ---------- */
+let tab="ok";
+function fmtDate(iso){try{return new Date(iso).toLocaleString("ru-RU",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}catch(e){return ""}}
 function render(full){
-  const n=counts();
-  $("cOk").textContent=n.ok;$("cBad").textContent=n.bad;$("cDup").textContent=n.dup;$("cLeft").textContent=n.left;
-  if(!full&&!$("camfull").hidden)return; // пока открыта камера, список не перерисовываем
-  $("tOk").textContent="Проверено ("+n.ok+")";$("tLeft").textContent="Не проверено ("+n.left+")";
-  $("tBad").textContent="Пересорт ("+n.bad+")";
+  if(curProd){const n=ps(curProd);
+    $("cOk").textContent=n.ok;$("cBad").textContent=n.bad;$("cDup").textContent=n.dup;$("cLeft").textContent=n.tot-n.ok}
+  if(!full&&!$("camfull").hidden)return;
+  if(view==="home")renderHome();else if(view==="doc")renderDoc();else renderProd();
+}
+function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+let delArm=null;
+function renderHome(){
+  const L=$("docList");L.innerHTML="";
+  if(!docs.length){L.append(el("div","empty","нет документов"));return}
+  docs.forEach(d=>{
+    let tot=0,ok=0;d.products.forEach(p=>{const n=ps(p);tot+=n.tot;ok+=n.ok});
+    const c=el("div","card");
+    c.append(el("div","t",d.title),el("div","s",fmtDate(d.created)+" · товаров: "+d.products.length+" · проверено "+ok+" из "+tot));
+    const pb=el("div","pb"+(tot&&ok===tot?" done":""));const i=document.createElement("i");i.style.width=(tot?Math.round(ok*100/tot):0)+"%";pb.append(i);c.append(pb);
+    const del=el("button","sm","Удалить");del.style.marginTop="8px";
+    del.onclick=e=>{e.stopPropagation();
+      if(delArm!==d.id){delArm=d.id;del.textContent="Нажмите ещё раз";setTimeout(()=>{if(delArm===d.id){delArm=null;del.textContent="Удалить"}},3500);return}
+      delArm=null;docs=docs.filter(x=>x!==d);cache.delete(d.id);save();renderHome()};
+    c.append(del);
+    c.onclick=()=>{curDoc=d;curProd=null;go("doc")};
+    L.append(c);
+  });
+}
+function renderDoc(){
+  if(!curDoc)return setView("home");
+  let tot=0,ok=0,bad=0;curDoc.products.forEach(p=>{const n=ps(p);tot+=n.tot;ok+=n.ok;bad+=n.bad});
+  $("docName").textContent=curDoc.title;
+  $("docSum").textContent="Проверено "+ok+" из "+tot+(bad?" · пересорт "+bad:"");
+  const q=$("search").value.trim().toLowerCase(),L=$("prodList");L.innerHTML="";
+  let shown=0;
+  curDoc.products.forEach((p,i)=>{
+    if(q&&p.name.toLowerCase().indexOf(q)<0)return;shown++;
+    const n=ps(p);
+    const r=el("div","prow"+(n.tot&&n.ok===n.tot?" done":n.bad?" err":n.ok?" part":""));
+    const m=el("div","pm");m.append(el("div","pn",p.name));
+    if(p.group.length){const g=pg(p);m.append(el("div","sub","потребительские "+g.cok+"/"+g.c+" · групповые "+g.gok+"/"+g.g))}
+    const pb=el("div","pb"+(n.tot&&n.ok===n.tot?" done":""));const bi=document.createElement("i");bi.style.width=(n.tot?Math.round(n.ok*100/n.tot):0)+"%";pb.append(bi);m.append(pb);
+    const pc=el("div","pc");const b=el("b",null,String(n.ok));pc.append(b,document.createTextNode(" · "+n.tot));
+    const lb=el("button","sm","Список");
+    lb.onclick=e=>{e.stopPropagation();curProd=p;curIdx=i;tab="ok";go("prod")};
+    r.append(m,pc,lb);
+    r.onclick=()=>{curProd=p;curIdx=i;openCam()};
+    L.append(r);
+  });
+  if(!shown)L.append(el("div","empty","ничего не найдено"));
+  const er=curDoc.errors||[];
+  $("invErr").textContent=er.length?("Коды в фактуре не из 31 символа (в сверке не участвуют): "+er.length+". "+er.slice(0,5).map(x=>x.prod+": "+x.code+" ("+x.len+")").join("; ")):"Ошибок длины в фактуре нет.";
+}
+function rowsFor(t){
+  const p=curProd;
+  if(t==="ok")return Object.entries(p.seen).map(([c,tm])=>({code:c,r:tm})).concat(Object.entries(p.gseen).map(([c,tm])=>({code:c,r:"групповой · "+tm})));
+  if(t==="left")return p.codes.filter(c=>!p.seen[c]).map(c=>({code:c,r:""})).concat(p.group.filter(c=>!p.gseen[c]).map(c=>({code:c,r:"групповой"})));
+  return Object.values(p.bad).map(v=>({code:v.code,r:v.why}));
+}
+function renderProd(){
+  if(!curProd)return setView("doc");
+  const n=ps(curProd);
+  $("prodName").textContent=curProd.name;
+  const g=pg(curProd);$("prodSum").textContent="Потребительские "+g.cok+" из "+g.c+(g.g?" · групповые "+g.gok+" из "+g.g:"")+(n.dup?" · повторов "+n.dup:"");
+  $("tOk").textContent="Проверено ("+n.ok+")";$("tLeft").textContent="Не проверено ("+(n.tot-n.ok)+")";$("tBad").textContent="Пересорт ("+n.bad+")";
   document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.t===tab));
   const body=$("tabBody");body.innerHTML="";
   const rows=rowsFor(tab);
-  if(!rows.length){const d=document.createElement("div");d.className="empty";d.textContent="нет кодов";body.append(d);return}
-  const groups=new Map();
-  rows.forEach(r=>{const g=r.code.length>=16?r.code.slice(2,16):"—";if(!groups.has(g))groups.set(g,[]);groups.get(g).push(r)});
-  let shown=0;
-  for(const [g,list] of groups){
-    if(shown>=300)break;
-    const h=document.createElement("div");h.className="grp";h.textContent="GTIN "+g+" · "+list.length;body.append(h);
-    for(const r of list){
-      if(shown++>=300)break;
-      const it=document.createElement("div");it.className="item "+tab;
-      const c=document.createElement("code");c.textContent=r.code;
-      const sp=document.createElement("span");sp.textContent=r.r;
-      it.append(c,sp);body.append(it);
-    }
-  }
-  if(rows.length>300){const d=document.createElement("div");d.className="hint";d.textContent="Показаны первые 300 из "+rows.length+". Полный список в отчёте CSV.";body.append(d)}
+  if(!rows.length){body.append(el("div","empty","нет кодов"));return}
+  rows.slice(0,400).forEach(r=>{
+    const it=el("div","item "+(tab==="left"?"":tab));
+    it.append(el("code",null,r.code),el("span",null,r.r));body.append(it);
+  });
+  if(rows.length>400)body.append(el("div","hint","Показаны первые 400 из "+rows.length+". Остальные доступны через копирование."));
 }
-document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{tab=b.dataset.t;render(true)});
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{tab=b.dataset.t;renderProd()});
+
+/* ---------- копирование ---------- */
+function copyText(t,label){
+  const done=()=>toast(label);
+  const fb=()=>{const ta=document.createElement("textarea");ta.value=t;ta.style.cssText="position:fixed;opacity:0";document.body.append(ta);ta.select();
+    try{document.execCommand("copy");done()}catch(e){toast("Не удалось скопировать")}ta.remove()};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done).catch(fb);else fb();
+}
+$("btnCpOk").onclick=()=>{const r=rowsFor("ok").map(x=>x.code);copyText(r.join("\n"),"Скопировано проверенных: "+r.length)};
+$("btnCpLeft").onclick=()=>{const r=rowsFor("left").map(x=>x.code);copyText(r.join("\n"),"Скопировано не проверенных: "+r.length)};
+$("btnCpBad").onclick=()=>{const r=rowsFor("bad").map(x=>x.code);copyText(r.join("\n"),"Скопировано пересорта: "+r.length)};
+function reportRows(){
+  const rows=[["товар","в фактуре","проверено","не проверено","пересорт","повторов"]];
+  curDoc.products.forEach(p=>{const n=ps(p);rows.push([p.name,n.tot,n.ok,n.tot-n.ok,n.bad,n.dup])});
+  return rows;
+}
+$("btnRepCopy").onclick=()=>copyText(reportRows().map(r=>r.join("\t")).join("\n"),"Отчёт скопирован");
+$("btnRepCsv").onclick=()=>{
+  const rows=[["товар","код","статус","время / причина"]];
+  curDoc.products.forEach(p=>{
+    Object.entries(p.seen).forEach(([c,t])=>rows.push([p.name,c,"проверено",t]));
+    Object.entries(p.gseen).forEach(([c,t])=>rows.push([p.name,c,"проверено (групповой)",t]));
+    p.codes.forEach(c=>{if(!p.seen[c])rows.push([p.name,c,"не проверено",""])});
+    p.group.forEach(c=>{if(!p.gseen[c])rows.push([p.name,c,"не проверено (групповой)",""])});
+    Object.values(p.bad).forEach(v=>rows.push([p.name,v.code,"пересорт",v.why]));
+    Object.entries(p.dup).forEach(([c,n])=>rows.push([p.name,c,"дубликат","повторов: "+n]));
+  });
+  const csv="\ufeff"+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(";")).join("\r\n");
+  const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download="sverka.csv";a.click();
+};
 
 /* ---------- мультискан: на кадре находятся участки с плотной «шашечной» текстурой (DataMatrix), каждый участок читается отдельно и параллельно ---------- */
 /*TILES-START*/
@@ -359,8 +538,8 @@ function runTiles(tiles){
 
 /* ---------- отслеживание кодов в кадре и подсветка ---------- */
 const trk=new Map(); // ключ кода -> {st,box,t}
-const HLC={ok:"31,157,85",bad:"214,69,69",dup:"232,180,0"};
-const RANK={ok:1,dup:2,bad:3};
+const HLC={ok:"31,157,85",bad:"214,69,69",dup:"232,180,0",grp:"59,130,246"};
+const RANK={grp:0,ok:1,dup:2,bad:3};
 function onResults(out,FW,vw){
   const k=vw/FW,now=Date.now(),done=new Set();
   let worst=null;
@@ -454,7 +633,9 @@ function onNative(ev){
   let worst=null,first="";
   for(const b of arr){
     const text=b.rawValue||b.displayValue||"";
-    if(!text||done.has(text))continue;done.add(text);
+    if(!text||done.has(text))continue;
+    if(b.format==="CODE_128"&&!/^00\d{18}$/.test(text.replace(/[()\s\u001d]/g,"")))continue;
+    done.add(text);
     if(!first)first=text;
     const p=parse(text);if(!p)continue;
     const key=p.ok?p.head:"x"+text;
@@ -483,7 +664,7 @@ async function nativeStart(){
     document.documentElement.classList.add("barcode-scanner-active");document.body.classList.add("barcode-scanner-active");
     $("qual").hidden=true;
     await BS.addListener("barcodesScanned",onNative);
-    await BS.startScan({formats:["DATA_MATRIX"],lensFacing:"BACK"});
+    await BS.startScan({formats:["DATA_MATRIX","CODE_128"],lensFacing:"BACK"});
     nativeOn=true;nativeTimer=setInterval(drawHL,120);
     try{const t=await BS.isTorchAvailable();$("btnTorch").hidden=!t.available}catch(e){}
     try{
@@ -505,19 +686,21 @@ async function nativeStop(){
   $("btnTorch").hidden=true;$("zoom").hidden=true;$("qual").hidden=false;
   const c=$("hl");c.getContext("2d").clearRect(0,0,c.width,c.height);
 }
+
 function openCam(){
-  show("idle");$("camfull").hidden=false;document.body.style.overflow="hidden";
+  if(!curProd)return;
+  $("camTitle").textContent=curProd.name;show("idle");$("camMsg").textContent="";
+  $("camfull").hidden=false;document.body.style.overflow="hidden";
   try{history.pushState({cam:1},"")}catch(e){}
+  render();
   if(NSC())nativeStart();else camStart();
 }
 async function closeCam(){
   if(NSC())await nativeStop();else camStop();
   $("camfull").hidden=true;document.body.style.overflow="";$("camMsg").textContent="";
-  render(true);
+  save();render(true);
 }
-$("btnScan").onclick=openCam;
 $("btnClose").onclick=()=>{if(history.state&&history.state.cam)history.back();else closeCam()};
-window.addEventListener("popstate",()=>{if(!$("camfull").hidden)closeCam()});
 $("btnTorch").onclick=async()=>{
   const BS=NSC();
   if(BS&&nativeOn){try{await BS.toggleTorch()}catch(e){}return}
@@ -525,32 +708,25 @@ $("btnTorch").onclick=async()=>{
 };
 $("zoom").oninput=()=>{const BS=NSC();if(BS&&nativeOn)BS.setZoomRatio({zoomRatio:+$("zoom").value}).catch(()=>{})};
 
-/* ---------- прочее ---------- */
-$("btnLoad").onclick=()=>loadInvoice($("invoice").value);
+
+/* ---------- загрузка фактуры и кнопки ---------- */
+function loadText(text,title){
+  const d=createDoc(text,title);
+  if(!d){$("loadMsg").textContent="В тексте не найдено ни товаров, ни кодов. Проверьте формат.";return}
+  const n=d.products.reduce((a,p)=>a+p.codes.length,0);
+  $("loadMsg").textContent="";$("invoice").value="";$("docTitle").value="";
+  toast("Документ создан: товаров "+d.products.length+", кодов "+n);
+  curDoc=d;curProd=null;go("doc");
+}
+$("btnLoad").onclick=()=>loadText($("invoice").value,$("docTitle").value.trim());
 $("btnFile").onclick=()=>$("file").click();
 $("file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{$("invoice").value=r.result;loadInvoice(r.result)};r.readAsText(f)};
+  r.onload=()=>{const t=r.result;$("invoice").value=t;loadText(t,$("docTitle").value.trim()||f.name.replace(/\.[^.]+$/,""))};r.readAsText(f);e.target.value=""};
+$("bkHome").onclick=back;$("bkDoc").onclick=back;
+$("search").addEventListener("input",()=>renderDoc());
+$("btnScanProd").onclick=openCam;
 $("code").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const v=$("code").value;$("code").value="";const st=check(v);if(st){feedback(st);render(true)}}});
-
-let armed=null;
-$("btnReset").onclick=()=>{
-  const b=$("btnReset");
-  if(!armed){b.textContent="Нажмите ещё раз для сброса";armed=setTimeout(()=>{armed=null;b.textContent="Сбросить сверку"},4000);return}
-  clearTimeout(armed);armed=null;b.textContent="Сбросить сверку";
-  seen=new Map();badMap=new Map();dupMap=new Map();trk.clear();
-  show("idle");render(true);
-};
-$("btnExport").onclick=()=>{
-  const rows=[["статус","код","время / причина"]];
-  seen.forEach((t,c)=>rows.push(["проверено",c,t]));
-  expected.forEach(c=>{if(!seen.has(c))rows.push(["не проверено",c,""])});
-  badMap.forEach(v=>rows.push(["пересорт",v.code,v.why]));
-  dupMap.forEach((n,c)=>rows.push(["дубликат",c,"повторов: "+n]));
-  badInv.forEach((len,k)=>rows.push(["ошибка в фактуре",k,"длина "+len]));
-  const csv="\ufeff"+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(";")).join("\r\n");
-  const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download="sverka.csv";a.click();
-};
-render(true);
+setView("home");
 </script>
 </body>
 </html>
