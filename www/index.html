@@ -97,7 +97,7 @@ body.barcode-scanner-active #video{display:none}
 <p class="hint" id="loadMsg"></p>
 </section>
 <div id="docList"></div>
-<p class="hint" style="text-align:center">Версия 8: сверка потребительских и групповых кодов</p>
+<p class="hint" style="text-align:center">Версия 8.1: сверка потребительских и групповых кодов</p>
 </main>
 
 <main id="vDoc" hidden>
@@ -201,6 +201,12 @@ function parse(raw,strict){
 }
 
 /* ---------- разбор файла фактуры: товар -> его коды ---------- */
+function ssccOf(raw){ // SSCC: 20 цифр с AI 00 (или 18 цифр без него), с любыми скобками и служебными символами
+  const d=String(raw||"").replace(/^\][A-Za-z][0-9]/,"").replace(/\D/g,"");
+  if(d.length===20&&d.startsWith("00"))return d;
+  if(d.length===18)return "00"+d;
+  return null;
+}
 function normGrp(s){let t=String(s||"").replace(/[()\s\u001d]/g,"");if(/^\d{18}$/.test(t))t="00"+t;return t}
 function parseInvoice(text){
   const prods=[],errors=[];let cur=null,sec="c";
@@ -263,9 +269,9 @@ function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";cle
 /* ---------- проверка кода внутри выбранного товара: ok / dup / bad / grp ---------- */
 function check(raw){
   if(!curDoc||!curProd)return null;
-  const t=String(raw||"").replace(/[()\s\u001d]/g,"");
+  const t=ssccOf(raw);
   const time=new Date().toLocaleTimeString("ru-RU");
-  if(/^00\d{18}$/.test(t)){ // групповой (агрегационный) код SSCC: сверка по файлу, состав внутри придёт из Xtrace
+  if(t){ // групповой (агрегационный) код SSCC: сверка по файлу, состав внутри придёт из Xtrace
     const c=dc(curDoc);let st;
     if(curProd.gseen[t]){st="dup";curProd.dup[t]=(curProd.dup[t]||0)+1}
     else if(c.gsets[curIdx].has(t)){st="ok";curProd.gseen[t]=time}
@@ -634,7 +640,7 @@ function onNative(ev){
   for(const b of arr){
     const text=b.rawValue||b.displayValue||"";
     if(!text||done.has(text))continue;
-    if(b.format==="CODE_128"&&!/^00\d{18}$/.test(text.replace(/[()\s\u001d]/g,"")))continue;
+    if(b.format==="CODE_128"&&!ssccOf(text))continue;
     done.add(text);
     if(!first)first=text;
     const p=parse(text);if(!p)continue;
@@ -652,7 +658,7 @@ function onNative(ev){
   }
   if(worst){feedback(worst);render()}
   trk.forEach((e,key)=>{if(now-e.t>3000)trk.delete(key)});
-  $("dbg").textContent="Кодов в кадре: "+done.size+(first?" · длина "+first.length+", разделитель: "+(first.indexOf("\u001d")>=0?"есть":"нет"):"");
+  $("dbg").textContent="Видит: "+(arr.map(b=>(b.format||"?")+"("+((b.rawValue||b.displayValue||"").length)+")").slice(0,4).join(" ")||"ничего")+" · принято: "+done.size+(first?" · длина "+first.length+", разделитель: "+(first.indexOf("\u001d")>=0?"есть":"нет"):"");
   drawHL();
 }
 async function nativeStart(){
